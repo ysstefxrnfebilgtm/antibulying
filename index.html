@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGAP - Sistem Anti-Bullying</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #F8FFFE;
+            --fg: #134E4A;
+            --muted: #5EEAD4;
+            --accent: #0D9488;
+            --accent-dark: #115E59;
+            --card: #FFFFFF;
+            --border: #99F6E4;
+            --danger: #DC2626;
+            --warning: #F59E0B;
+            --success: #10B981;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-family: 'Space Grotesk', sans-serif; }
+
+        .bg-pattern {
+            position: fixed; inset: 0; z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(13, 148, 136, 0.06) 0%, transparent 50%);
+        }
+
+        /* Animations */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .animate-slide-up { animation: slideUp 0.6s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--accent-dark) 0%, var(--accent) 100%);
+            position: fixed; left: 0; top: 0; z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px;
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px; margin: 4px 12px;
+            transition: all 0.2s ease; text-decoration: none; cursor: pointer;
+        }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.15); color: white; }
+        .sidebar-link.active { background: rgba(255, 255, 255, 0.2); color: white; font-weight: 600; }
+
+        /* Main Content Adjustments */
+        .main-content { margin-left: var(--sidebar-width); min-height: 100vh; transition: margin-left 0.3s ease; }
+        
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); z-index: 60; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+
+        /* Cards & Components */
+        .card {
+            background: var(--card); border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 24px rgba(13, 148, 136, 0.06);
+            transition: all 0.3s ease;
+        }
+        .card:hover { box-shadow: 0 8px 32px rgba(13, 148, 136, 0.1); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: white; padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(13, 148, 136, 0.3); }
+
+        .btn-secondary {
+            background: transparent; color: var(--accent);
+            padding: 12px 24px; border-radius: 10px;
+            font-weight: 600; border: 2px solid var(--accent); cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover { background: var(--accent); color: white; }
+
+        .form-input {
+            width: 100%; padding: 14px 16px;
+            border: 2px solid var(--border); border-radius: 10px;
+            font-size: 15px; transition: all 0.2s ease; background: white;
+        }
+        .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1); }
+
+        /* Badges */
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-pending { background: #FEF3C7; color: #92400E; }
+        .badge-process { background: #DBEAFE; color: #1E40AF; }
+        .badge-done { background: #D1FAE5; color: #065F46; }
+        .badge-reject { background: #FEE2E2; color: #991B1B; }
+
+        /* Notification Panel */
+        .notification-panel {
+            position: fixed; top: 0; right: -400px; width: 380px; height: 100vh;
+            background: white; box-shadow: -8px 0 32px rgba(0, 0, 0, 0.1);
+            z-index: 100; transition: right 0.3s ease; overflow-y: auto;
+        }
+        .notification-panel.open { right: 0; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 200;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-content { background: white; border-radius: 20px; max-width: 500px; width: 90%; padding: 24px; }
+
+        /* Tables */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #F0FDFA; padding: 14px 16px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+        .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #F0FDFA; }
+
+        /* Progress Bar */
+        .progress-bar { height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F0FDFA; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 20px; right: 20px;
+            transform: translateY(100px); opacity: 0;
+            transition: all 0.3s ease; z-index: 9999;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="card p-8 w-full max-w-md animate-slide-up">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <h1 class="text-2xl font-bold" style="color: var(--fg);">SIGAP</h1>
+                <p class="text-gray-500 mt-1">Sistem Informasi Gerakan Anti Perundungan</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Login Sebagai</label>
+                    <select id="loginRole" class="form-input">
+                        <option value="admin">Administrator</option>
+                        <option value="guru">Guru / BK</option>
+                        <option value="siswa">Siswa</option>
+                        <option value="public">Tamu (Laporan Publik)</option>
+                    </select>
+                </div>
+                <div id="loginFields">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Username</label>
+                            <input type="text" id="username" class="form-input" placeholder="Masukkan username">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Password</label>
+                            <input type="password" id="password" class="form-input" placeholder="Masukkan password">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary w-full justify-center mt-6">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    Masuk
+                </button>
+            </form>
+
+            <div class="mt-6 p-4 rounded-xl text-xs text-gray-600" style="background: #F0FDFA;">
+                <strong>Demo Login:</strong><br>
+                Admin: admin / admin123<br>
+                Guru: guru / guru123<br>
+                Siswa: siswa / siswa123
+            </div>
+        </div>
+    </div>
+
+    <!-- PUBLIC PAGE -->
+    <div id="publicPage" class="hidden">
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b" style="border-color: var(--border);">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-te-600 to-te-800 text-white font-bold">S</div>
+                    <span class="text-xl font-bold">SIGAP</span>
+                </div>
+                <nav class="hidden md:flex items-center gap-6">
+                    <a href="#beranda" class="text-gray-600 hover:text-teal-700">Beranda</a>
+                    <a href="#lapor" class="text-gray-600 hover:text-teal-700">Lapor</a>
+                    <button onclick="App.showLogin()" class="btn-primary text-sm py-2">Masuk Dashboard</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Hero -->
+        <section id="beranda" class="py-16 md:py-24">
+            <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+                <div class="animate-slide-up">
+                    <span class="inline-block px-4 py-2 rounded-full text-sm font-medium mb-6 bg-teal-50 text-teal-700">Bersama Melindungi Generasi</span>
+                    <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-6">
+                        Laporkan Bullying, <span class="text-teal-700">Lindungi Masa Depan</span>
+                    </h1>
+                    <p class="text-lg text-gray-600 mb-8">SIGAP adalah sistem pelaporan bullying yang aman dan rahasia. Bersama kita ciptakan lingkungan yang lebih baik.</p>
+                    <a href="#lapor" class="btn-primary">Buat Laporan</a>
+                </div>
+                <div class="card p-8 grid grid-cols-2 gap-4 text-center">
+                    <div class="p-4 rounded-xl bg-teal-50">
+                        <p class="text-3xl font-bold text-teal-700" id="publicStatTotal">0</p>
+                        <p class="text-sm text-gray-600">Laporan</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-green-50">
+                        <p class="text-3xl font-bold text-green-700" id="publicStatDone">0</p>
+                        <p class="text-sm text-gray-600">Selesai</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form Laporan Publik -->
+        <section id="lapor" class="py-16 bg-teal-50/50">
+            <div class="max-w-3xl mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center mb-8">Formulir Pelaporan</h2>
+                <div class="card p-8">
+                    <form id="publicReportForm" class="space-y-6">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Nama (Opsional)</label>
+                                <input type="text" id="repName" class="form-input" placeholder="Bisa anonim">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Email *</label>
+                                <input type="email" id="repEmail" class="form-input" required>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Kategori *</label>
+                                <select id="repCategory" class="form-input" required>
+                                    <option value="fisik">Bullying Fisik</option>
+                                    <option value="verbal">Bullying Verbal</option>
+                                    <option value="sosial">Bullying Sosial</option>
+                                    <option value="cyber">Cyberbullying</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Tanggal Kejadian *</label>
+                                <input type="date" id="repDate" class="form-input" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Deskripsi Kejadian *</label>
+                            <textarea id="repDesc" rows="4" class="form-input" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary w-full justify-center">Kirim Laporan</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="adminPage" class="hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-8 text-white">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 font-bold">S</div>
+                    <span class="text-xl font-bold">SIGAP Admin</span>
+                </div>
+                <nav class="space-y-1">
+                    <a onclick="App.switchPage('dashboard')" class="sidebar-link active" data-page="dashboard">Dashboard</a>
+                    <a onclick="App.switchPage('reports')" class="sidebar-link" data-page="reports">Laporan</a>
+                    <a onclick="App.switchPage('users')" class="sidebar-link" data-page="users">Pengguna</a>
+                </nav>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 p-4">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/10 text-white">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold" id="userAvatar">A</div>
+                    <div class="overflow-hidden">
+                        <p class="font-medium truncate" id="userName">Admin</p>
+                        <p class="text-xs opacity-70" id="userRole">Administrator</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b flex items-center justify-between px-6 h-16" style="border-color: var(--border);">
+                <div class="flex items-center gap-4">
+                    <button onclick="App.toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <h1 class="text-xl font-semibold" id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="App.toggleNotif()" class="relative p-2 rounded-lg hover:bg-gray-100">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <span id="notifDot" class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full hidden"></span>
+                    </button>
+                    <button onclick="App.logout()" class="btn-secondary py-2 px-4 text-sm">Keluar</button>
+                </div>
+            </header>
+
+            <!-- Page Contents -->
+            <div class="p-6">
+                <!-- Dashboard Page -->
+                <div id="pageDashboard">
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="card p-6"><p class="text-sm text-gray-500">Total Laporan</p><p class="text-3xl font-bold mt-2" id="statTotal">0</p></div>
+                        <div class="card p-6"><p class="text-sm text-gray-500">Diproses</p><p class="text-3xl font-bold mt-2 text-blue-600" id="statProcess">0</p></div>
+                        <div class="card p-6"><p class="text-sm text-gray-500">Selesai</p><p class="text-3xl font-bold mt-2 text-green-600" id="statDone">0</p></div>
+                        <div class="card p-6"><p class="text-sm text-gray-500">Ditolak</p><p class="text-3xl font-bold mt-2 text-red-600" id="statReject">0</p></div>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="font-semibold mb-4">Laporan Terbaru</h3>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>ID</th><th>Kategori</th><th>Tanggal</th><th>Status</th></tr></thead>
+                                <tbody id="dashRecentTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Page -->
+                <div id="pageReports" class="hidden">
+                    <div class="card overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>ID</th><th>Pelapor</th><th>Kategori</th><th>Status</th><th>Aksi</th></tr></thead>
+                                <tbody id="reportsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Page -->
+                <div id="pageUsers" class="hidden">
+                    <div class="card p-6">
+                        <h3 class="font-semibold mb-4">Daftar Pengguna Terdaftar</h3>
+                        <div class="overflow-x-auto">
+                            <table class="data-table">
+                                <thead><tr><th>Nama</th><th>Email</th><th>Role</th></tr></thead>
+                                <tbody id="usersTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Panel -->
+    <div id="notifPanel" class="notification-panel">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="font-semibold">Notifikasi</h3>
+            <button onclick="App.toggleNotif()" class="p-2 hover:bg-gray-100 rounded-lg">&times;</button>
+        </div>
+        <div id="notifList" class="divide-y"></div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Detail Laporan</h3>
+                <button onclick="App.closeModal()" class="p-2 hover:bg-gray-100 rounded-lg">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="App.updateStatus('process')" class="btn-primary flex-1 justify-center text-sm py-2">Proses</button>
+                <button onclick="App.updateStatus('done')" class="btn-secondary flex-1 text-sm py-2">Selesai</button>
+                <button onclick="App.updateStatus('reject')" class="btn-secondary flex-1 text-sm py-2 text-red-600 border-red-600 hover:bg-red-600 hover:text-white">Tolak</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="card p-4 flex items-center gap-3 border-l-4 border-teal-500">
+        <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="toastMsg">Berhasil!</span>
+    </div>
+
+    <script>
+        // ================= DATABASE CORE =================
+        const DB = {
+            users: [
+                { id: 1, name: 'Administrator', email: 'admin@sigap.com', username: 'admin', password: 'admin123', role: 'admin' },
+                { id: 2, name: 'Ibu Siti (BK)', email: 'siti@sigap.com', username: 'guru', password: 'guru123', role: 'guru' },
+                { id: 3, name: 'Andi Pratama', email: 'andi@sigap.com', username: 'siswa', password: 'siswa123', role: 'siswa' }
+            ],
+            reports: [
+                { id: 'RPT001', name: 'Anonim', email: 'anon@mail.com', category: 'fisik', date: '2025-01-10', desc: 'Siswa dipukul di koridor.', status: 'process' },
+                { id: 'RPT002', name: 'Wali Murid', email: 'wali@mail.com', category: 'verbal', date: '2025-01-08', desc: 'Siswa dihina di kelas.', status: 'done' }
+            ],
+            notifications: [
+                { id: 1, title: 'Laporan Baru', msg: 'RPT001 masuk', read: false, time: new Date().toISOString() }
+            ]
+        };
+
+        // Save/Load LocalStorage
+        function saveDB() { localStorage.setItem('sigap_db', JSON.stringify(DB)); }
+        function loadDB() { 
+            const d = localStorage.getItem('sigap_db'); 
+            if(d) { 
+                const parsed = JSON.parse(d);
+                // Merge to keep structure
+                Object.assign(DB, parsed); 
+            } else {
+                saveDB(); // Initialize if empty
+            }
+        }
+
+        // ================= APP STATE =================
+        let currentUser = null;
+        let selectedReport = null;
+
+        const App = {
+            // --- Auth ---
+            login(e) {
+                e.preventDefault();
+                const role = document.getElementById('loginRole').value;
+                if(role === 'public') {
+                    currentUser = { name: 'Tamu', role: 'public' };
+                    App.show('public');
+                    return;
+                }
+                
+                const u = document.getElementById('username').value;
+                const p = document.getElementById('password').value;
+                const user = DB.users.find(x => x.username === u && x.password === p && x.role === role);
+                
+                if(user) {
+                    currentUser = user;
+                    localStorage.setItem('sigap_session', JSON.stringify(user));
+                    App.show('admin');
+                    App.toast('Login berhasil');
+                } else {
+                    App.toast('Login gagal. Periksa kredensial.');
+                }
+            },
+
+            logout() {
+                currentUser = null;
+                localStorage.removeItem('sigap_session');
+                App.show('login');
+                App.toast('Anda telah keluar');
+            },
+
+            checkSession() {
+                const s = localStorage.getItem('sigap_session');
+                if(s) {
+                    currentUser = JSON.parse(s);
+                    App.show('admin');
+                } else {
+                    App.show('login');
+                }
+            },
+
+            // --- Views ---
+            show(page) {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('publicPage').classList.add('hidden');
+                document.getElementById('adminPage').classList.add('hidden');
+                
+                if(page === 'login') document.getElementById('loginPage').classList.remove('hidden');
+                if(page === 'public') {
+                    document.getElementById('publicPage').classList.remove('hidden');
+                    App.renderPublicStats();
+                }
+                if(page === 'admin') {
+                    document.getElementById('adminPage').classList.remove('hidden');
+                    App.renderDashboard();
+                    App.renderUserInfo();
+                }
+            },
+            
+            showLogin() { App.show('login'); },
+
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('mobile-open');
+            },
+
+            // --- Dashboard Logic ---
+            renderDashboard() {
+                // Stats
+                const total = DB.reports.length;
+                const process = DB.reports.filter(r => r.status === 'process').length;
+                const done = DB.reports.filter(r => r.status === 'done').length;
+                const reject = DB.reports.filter(r => r.status === 'reject').length;
+
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statProcess').textContent = process;
+                document.getElementById('statDone').textContent = done;
+                document.getElementById('statReject').textContent = reject;
+
+                // Recent Table
+                const recent = DB.reports.slice(-5).reverse();
+                const tbody = document.getElementById('dashRecentTable');
+                tbody.innerHTML = recent.map(r => `
+                    <tr>
+                        <td class="font-medium">${r.id}</td>
+                        <td>${r.category}</td>
+                        <td>${r.date}</td>
+                        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                App.renderNotif();
+            },
+
+            renderPublicStats() {
+                document.getElementById('publicStatTotal').textContent = DB.reports.length;
+                document.getElementById('publicStatDone').textContent = DB.reports.filter(r => r.status === 'done').length;
+            },
+
+            renderUserInfo() {
+                if(!currentUser) return;
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+                document.getElementById('userAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+            },
+
+            // --- Pages ---
+            switchPage(p) {
+                // Sidebar active state
+                document.querySelectorAll('.sidebar-link').forEach(el => {
+                    el.classList.remove('active');
+                    if(el.dataset.page === p) el.classList.add('active');
+                });
+                
+                // Page visibility
+                document.getElementById('pageDashboard').classList.add('hidden');
+                document.getElementById('pageReports').classList.add('hidden');
+                document.getElementById('pageUsers').classList.add('hidden');
+                
+                if(p === 'dashboard') document.getElementById('pageDashboard').classList.remove('hidden');
+                if(p === 'reports') {
+                    document.getElementById('pageReports').classList.remove('hidden');
+                    App.renderReports();
+                }
+                if(p === 'users') {
+                    document.getElementById('pageUsers').classList.remove('hidden');
+                    App.renderUsers();
+                }
+
+                document.getElementById('pageTitle').textContent = p.charAt(0).toUpperCase() + p.slice(1);
+                
+                // Close mobile sidebar
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            },
+
+            renderReports() {
+                const tbody = document.getElementById('reportsTable');
+                tbody.innerHTML = DB.reports.map(r => `
+                    <tr>
+                        <td class="font-medium">${r.id}</td>
+                        <td>${r.name || 'Anonim'}</td>
+                        <td>${r.category}</td>
+                        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+                        <td><button onclick="App.viewReport('${r.id}')" class="text-teal-600 font-medium hover:underline">Detail</button></td>
+                    </tr>
+                `).join('');
+            },
+
+            renderUsers() {
+                const tbody = document.getElementById('usersTable');
+                tbody.innerHTML = DB.users.map(u => `
+                    <tr>
+                        <td class="font-medium">${u.name}</td>
+                        <td>${u.email}</td>
+                        <td><span class="badge badge-done">${u.role}</span></td>
+                    </tr>
+                `).join('');
+            },
+
+            // --- Actions ---
+            submitReport(e) {
+                e.preventDefault();
+                const newId = 'RPT' + String(DB.reports.length + 1).padStart(3, '0');
+                const newReport = {
+                    id: newId,
+                    name: document.getElementById('repName').value || 'Anonim',
+                    email: document.getElementById('repEmail').value,
+                    category: document.getElementById('repCategory').value,
+                    date: document.getElementById('repDate').value,
+                    desc: document.getElementById('repDesc').value,
+                    status: 'pending'
+                };
+                
+                DB.reports.push(newReport);
+                DB.notifications.push({ id: Date.now(), title: 'Laporan Baru', msg: `${newId} diterima`, read: false, time: new Date().toISOString() });
+                saveDB();
+                
+                App.toast('Laporan terkirim! ID: ' + newId);
+                e.target.reset();
+                App.renderPublicStats();
+            },
+
+            viewReport(id) {
+                selectedReport = DB.reports.find(r => r.id === id);
+                if(!selectedReport) return;
+                
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="space-y-3 text-sm">
+                        <p><strong>ID:</strong> ${selectedReport.id}</p>
+                        <p><strong>Status:</strong> <span class="badge badge-${selectedReport.status}">${selectedReport.status}</span></p>
+                        <p><strong>Pelapor:</strong> ${selectedReport.name} (${selectedReport.email})</p>
+                        <p><strong>Kategori:</strong> ${selectedReport.category}</p>
+                        <p><strong>Tanggal:</strong> ${selectedReport.date}</p>
+                        <p><strong>Deskripsi:</strong><br>${selectedReport.desc}</p>
+                    </div>
+                `;
+                document.getElementById('detailModal').classList.add('open');
+            },
+
+            updateStatus(status) {
+                if(!selectedReport) return;
+                const r = DB.reports.find(x => x.id === selectedReport.id);
+                if(r) {
+                    r.status = status;
+                    saveDB();
+                    App.toast('Status diperbarui');
+                    App.closeModal();
+                    App.renderDashboard();
+                    App.renderReports();
+                }
+            },
+
+            closeModal() {
+                document.getElementById('detailModal').classList.remove('open');
+                selectedReport = null;
+            },
+
+            // --- Notifications ---
+            toggleNotif() {
+                const panel = document.getElementById('notifPanel');
+                panel.classList.toggle('open');
+                if(panel.classList.contains('open')) {
+                    DB.notifications.forEach(n => n.read = true);
+                    saveDB();
+                    App.renderNotif();
+                }
+            },
+
+            renderNotif() {
+                const list = document.getElementById('notifList');
+                const unread = DB.notifications.filter(n => !n.read).length;
+                
+                document.getElementById('notifDot').classList.toggle('hidden', unread === 0);
+                
+                list.innerHTML = DB.notifications.slice().reverse().map(n => `
+                    <div class="p-4 ${n.read ? 'bg-white' : 'bg-teal-50'}">
+                        <p class="font-medium text-sm">${n.title}</p>
+                        <p class="text-xs text-gray-500 mt-1">${n.msg}</p>
+                    </div>
+                `).join('');
+            },
+
+            // --- Utility ---
+            toast(msg) {
+                const t = document.getElementById('toast');
+                document.getElementById('toastMsg').textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 3000);
+            }
+        };
+
+        // ================= INIT =================
+        window.onload = function() {
+            loadDB();
+            App.checkSession();
+
+            // Event Listeners
+            document.getElementById('loginForm').addEventListener('submit', App.login);
+            document.getElementById('publicReportForm').addEventListener('submit', App.submitReport);
+            
+            // Login role toggle
+            document.getElementById('loginRole').addEventListener('change', function() {
+                const fields = document.getElementById('loginFields');
+                if(this.value === 'public') {
+                    fields.innerHTML = '<p class="text-sm text-center text-gray-500 py-4">Anda akan login sebagai Tamu.</p>';
+                } else {
+                    fields.innerHTML = `
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Username</label>
+                                <input type="text" id="username" class="form-input" placeholder="Masukkan username">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Password</label>
+                                <input type="password" id="password" class="form-input" placeholder="Masukkan password">
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        };
+    </script>
+</body>
+</html>
